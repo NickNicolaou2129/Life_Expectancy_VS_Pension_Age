@@ -1,0 +1,94 @@
+---
+title: "Life Expectancy & State Pension Age Correlations"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(flexdashboard)
+library(xml2)
+library(rvest)
+library(stringr)
+library(leaflet)
+library(stringr)
+library(countrycode)
+
+    urlLifeExpectancy <- "https://en.wikipedia.org/wiki/List_of_countries_by_life_expectancy"
+
+    extractedLifeData = urlLifeExpectancy %>%
+      read_html() %>%
+      html_node(xpath = '//*[@id="mw-content-text"]/div/table[1]') %>%
+      html_table(fill = TRUE)
+
+    urlPensionAge <- "https://en.wikipedia.org/wiki/Retirement_age#Retirement_age_by_country"
+
+    extractedPensionData = urlPensionAge %>%
+      read_html() %>%
+      html_node(xpath = '//*[@id="mw-content-text"]/div/table[3]') %>%
+      html_table(fill = TRUE)
+
+    combinedData <- merge(extractedLifeData[c(1, 5, 7)], extractedPensionData[1:3], by.y = "Country", by.x = "Country and regions")
+
+
+
+    
+    
+
+```
+
+2019
+=======================================================================
+
+
+```{r}
+
+names_var <- colnames(combinedData)
+    colnames(combinedData)[1:3] <- c('country','Female_Life_Expect','Male_Life_Expect')
+
+    index <- nchar(combinedData$Men) == 5
+
+    combinedData$Men_New <- as.numeric(combinedData$Men)
+    combinedData$Men_New[index] <- (as.numeric(substr(combinedData$Men[index],1,2)) + as.numeric(substr(combinedData$Men[index],4,5)))/2
+
+    index <- substr(combinedData$Men,3,3) == 'y' 
+    combinedData$Men_New[index] <- as.numeric(substr(combinedData$Men[index],1,2)) + as.numeric(substr(combinedData$Men[index],4,4))/12
+
+    index <- is.na(combinedData$Men_New)
+    combinedData$Men_New[index] <- as.numeric(substr(combinedData$Men[index],1,2))
+
+    index <- nchar(combinedData$Women) == 5
+    combinedData$Women_New <- as.numeric(combinedData$Women)
+    combinedData$Women_New[index] <- (as.numeric(substr(combinedData$Women[index],1,2)) + as.numeric(substr(combinedData$Women[index],4,5)))/2
+
+    index <- substr(combinedData$Women,3,3) == 'y' 
+    combinedData$Women_New[index] <- as.numeric(substr(combinedData$Women[index],1,2)) + as.numeric(substr(combinedData$Women[index],4,4))/12
+
+    index <- is.na(combinedData$Women_New)
+    combinedData$Women_New[index] <- as.numeric(substr(combinedData$Women[index],1,2))
+
+    colnames(combinedData)[1:3] <- c('country','Female_Life_Expect','Male_Life_Expect')
+    aux_data <- combinedData[,c(3,6)]
+    data <- combinedData[,c(2,7)]
+    colnames(data) <- c('v1','v2')
+    colnames(aux_data) <- c('v1','v2')
+    data <- rbind(data,aux_data)
+    data$Gender <- c(rep('Female',nrow(combinedData)),rep('Male',nrow(combinedData)))
+    colnames(data)[1:2] <- c('Life_Exp','Pension_Age')
+    ggplot(data=data,aes(x=Life_Exp,y=Pension_Age,col=Gender)) + geom_point()
+
+
+    combinedData$Continent <- countrycode(sourcevar = combinedData$country,
+                                           origin = "country.name",
+                                           destination = "continent")
+
+    data$Continent <- rep(combinedData$Continent,2)
+    #Graphic with continents
+    ggplot(data=data,aes(x=Life_Exp,y=Pension_Age,col= Continent, shape=Gender)) + geom_point()
+
+
+```
+
+
+
