@@ -32,10 +32,6 @@ library(countrycode)
     combinedData <- merge(extractedLifeData[c(1, 5, 7)], extractedPensionData[1:3], by.y = "Country", by.x = "Country and regions")
 
 
-
-    
-    
-
 ```
 
 
